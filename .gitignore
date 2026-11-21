@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+*.log
+*.webm
+cyberguard-results.sarif
+cyberguard-report.*

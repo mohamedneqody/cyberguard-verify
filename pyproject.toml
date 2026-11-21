@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberguard-verify"
+version = "3.0.0"
+description = "Evidence-based, non-destructive web application security verification engine with real browser DOM proof, SARIF 2.1.0, and CI/CD gating."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+browser = ["playwright>=1.45.0"]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+cyberguard-verify = "cyberguard_verify.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cyberguard_verify*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

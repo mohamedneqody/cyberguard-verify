@@ -1,0 +1,104 @@
+name: 'CyberGuard Verify Security Gate'
+description: 'Evidence-based, zero-false-positive DAST security verification with SARIF 2.1.0, white-label HTML/PDF reporting, and PR baseline diffing.'
+author: 'CyberGuard Security'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Authorized target URL to verify (e.g. http://127.0.0.1:8767)'
+    required: true
+  mode:
+    description: 'Audit mode (verdict, discover, graphql, oast, time_sqli, xxe)'
+    required: false
+    default: 'verdict'
+  format:
+    description: 'Output report format (json, sarif, html, pdf)'
+    required: false
+    default: 'sarif'
+  out:
+    description: 'Output file path for generated report'
+    required: false
+    default: 'cyberguard-report.sarif'
+  baseline:
+    description: 'Optional path to previous verdict JSON report for PR baseline diffing'
+    required: false
+    default: ''
+  only-new:
+    description: 'Fail CI only on newly introduced baseline regressions'
+    required: false
+    default: 'false'
+  storage-state:
+    description: 'Optional path to Playwright storageState JSON file for SSO/2FA session replay'
+    required: false
+    default: ''
+  workflow:
+    description: 'Optional path to Playwright multi-step browser workflow JSON macro'
+    required: false
+    default: ''
+  time-sqli:
+    description: 'Enable 4-step timing-sandwich Time-Based Blind SQLi verification'
+    required: false
+    default: 'false'
+  brand-name:
+    description: 'Custom brand/company name for white-label HTML/PDF/SARIF reports'
+    required: false
+    default: ''
+  client-name:
+    description: 'Client/organization name for white-label HTML/PDF/SARIF reports'
+    required: false
+    default: ''
+  ci:
+    description: 'Exit non-zero when confirmed vulnerabilities or auth/coverage gates occur'
+    required: false
+    default: 'true'
+
+outputs:
+  report-path:
+    description: 'Path to the generated security verification report'
+    value: ${{ inputs.out }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install cyberguard-verify
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e "${{ github.action_path }}"
+
+    - name: Run CyberGuard Verify
+      shell: bash
+      run: |
+        ARGS=("${{ inputs.target }}" "--mode" "${{ inputs.mode }}" "--format" "${{ inputs.format }}" "--out" "${{ inputs.out }}")
+        if [ -n "${{ inputs.baseline }}" ]; then
+          ARGS+=("--baseline" "${{ inputs.baseline }}")
+        fi
+        if [ "${{ inputs.only-new }}" = "true" ]; then
+          ARGS+=("--only-new")
+        fi
+        if [ -n "${{ inputs.storage-state }}" ]; then
+          ARGS+=("--storage-state" "${{ inputs.storage-state }}")
+        fi
+        if [ -n "${{ inputs.workflow }}" ]; then
+          ARGS+=("--workflow" "${{ inputs.workflow }}")
+        fi
+        if [ "${{ inputs.time-sqli }}" = "true" ]; then
+          ARGS+=("--time-sqli")
+        fi
+        if [ -n "${{ inputs.brand-name }}" ]; then
+          ARGS+=("--brand-name" "${{ inputs.brand-name }}")
+        fi
+        if [ -n "${{ inputs.client-name }}" ]; then
+          ARGS+=("--client-name" "${{ inputs.client-name }}")
+        fi
+        if [ "${{ inputs.ci }}" = "true" ]; then
+          ARGS+=("--ci")
+        fi
+        cyberguard-verify "${ARGS[@]}"

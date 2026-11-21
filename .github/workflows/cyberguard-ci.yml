@@ -1,0 +1,56 @@
+name: CyberGuard Verify Security Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dast-verification:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install CyberGuard Verify + Headless Chromium
+        run: |
+          pip install ".[browser]"
+          playwright install chromium --with-deps
+
+      - name: Run Unit & Engine Verification Tests
+        run: |
+          pip install pytest
+          pytest -v
+
+      - name: Example Non-Destructive Staging Verification Gate
+        if: vars.STAGING_TARGET_URL != ''
+        continue-on-error: true
+        run: |
+          cyberguard-verify "${{ vars.STAGING_TARGET_URL }}" \
+            --format sarif \
+            --out cyberguard-results.sarif \
+            --ci
+          cyberguard-verify "${{ vars.STAGING_TARGET_URL }}" \
+            --format html \
+            --out cyberguard-report.html
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: hashFiles('cyberguard-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: cyberguard-results.sarif
+
+      - name: Upload HTML Executive Report
+        if: hashFiles('cyberguard-report.html') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyberguard-audit-report
+          path: cyberguard-report.html

@@ -1,0 +1,12 @@
+services:
+  cyberguard-verify:
+    build: .
+    image: cyberguard-verify:3.0.0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - CYBERGUARD_ALLOWED_HOSTS=127.0.0.1,localhost,host.docker.internal
+    volumes:
+      - ./reports:/reports
+    # Example command:
+    # docker compose run --rm cyberguard-verify http://host.docker.internal:8767 --format html --out /reports/audit.html --ci
